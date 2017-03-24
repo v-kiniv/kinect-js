@@ -12,8 +12,8 @@ class Kinect extends EventEmitter {
       trackedBodies: 0
     };
 
-    this.on('newListener', () => this._updateSessionOptions());
-    this.on('removeListener', () => this._updateSessionOptions());
+    this.on('newListener', event => this._handleNewListener(event));
+    this.on('removeListener', event => this._handleRemoveListener(event));
   }
 
   get address() {
@@ -33,6 +33,10 @@ class Kinect extends EventEmitter {
     }
 
     this.socket = new WebSocket('ws://' + this.address + ':8181');
+    this.socket.binaryType = 'arraybuffer';
+
+    this.lastAdded = null;
+    this.lastRemoved = null;
 
     this.socket.onopen = () => {
       clearInterval(this.timer);
@@ -83,10 +87,23 @@ class Kinect extends EventEmitter {
           this.emit(event.type, event);
         }
       }
+      else if (msg.data instanceof ArrayBuffer) {
+        this._processBlob(msg.data);
+      }
     };
   }
 
   /* Private methods */
+  _handleNewListener(event) {
+    this.lastAdded = event;
+    this._updateSessionOptions();
+  }
+
+  _handleRemoveListener(event) {
+    this.lastRemoved = event;
+    this._updateSessionOptions();
+  }
+
   _sendServerEvent(eventType, data) {
     var event = { Type: eventType, Data: JSON.stringify(data) };
     this.socket.send(JSON.stringify(event));
@@ -101,16 +118,47 @@ class Kinect extends EventEmitter {
     this.emit('state', state);
   }
 
+  _listenersCount(event) {
+    let count = this.listenerCount(event);
+    if (this.lastAdded !== null && event === this.lastAdded) {
+      count++;
+      this.lastAdded = null;
+    }
+    if (this.lastRemoved !== null && event === this.lastAdded) {
+      count--;
+      this.lastRemoved = null;
+    }
+    return count;
+  }
+
   _updateSessionOptions() {
     var config = {};
-    config.GestureEvents = this.listenerCount('gesture') > 0;
-    config.BodyEvents = this.listenerCount('bodies') > 0;
+    config.GestureEvents = this._listenersCount('gesture') > 0;
+    config.BodyEvents = this._listenersCount('bodies') > 0;
+    config.DepthEvents = this._listenersCount('depth') > 0;
 
     if (this.connected) {
       this._sendServerEvent('SessionConfig', config);
     }
   }
+
+  _processBlob(data) {
+    var ba = new Uint16Array(data);
+
+    let streamType = ba[0];
+    if (streamType === Kinect.StreamType.Depth) {
+      let frameDesc = {width: ba[1], height: ba[2], minDistance: ba[3], maxDistance: ba[4]};
+      this.emit('depth', new Uint16Array(data, 10), frameDesc);
+    }
+
+  }
 }
+
+Kinect.StreamType = Object.freeze({
+  'IR': 0,
+  'Depth': 1,
+  'Color': 2
+});
 
 Kinect.JointType = Object.freeze({
   0: 'SpineBase',
