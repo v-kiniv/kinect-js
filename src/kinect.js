@@ -71,24 +71,22 @@ class Kinect extends EventEmitter {
       if (typeof msg.data === 'string') {
         var event = JSON.parse(msg.data);
 
-        if (event.type === 'state') {
-          this.sensor.available = event.state.available;
-          this.sensor.trackedBodies = event.state.trackedBodies;
-          this._updateState();
-        }
-        else if (event.type === 'bodies') {
-          var bodies = [];
-          event.bodies.forEach(compactBody => {
-            bodies.push(new Body(compactBody));
-          });
-          this.emit(event.type, { type: event.type, bodies: bodies });
-        }
-        else {
-          this.emit(event.type, event);
+        switch (event.type) {
+          case 'state':
+            this._handleStateEvent(event);
+            break;
+          case 'bodies':
+            this._handleBodiesEvent(event);
+            break;
+          case 'gesture':
+            this._handleGestureEvent(event);
+            break;
+          default:
+            break;
         }
       }
       else if (msg.data instanceof ArrayBuffer) {
-        this._processBlob(msg.data);
+        this._handleStreamEvent(msg.data);
       }
     };
   }
@@ -142,7 +140,27 @@ class Kinect extends EventEmitter {
     }
   }
 
-  _processBlob(data) {
+  /* Server event handlers */
+  _handleStateEvent(event) {
+    this.sensor.available = event.state.available;
+    this.sensor.trackedBodies = event.state.trackedBodies;
+    this._updateState();
+  }
+
+  _handleBodiesEvent(event) {
+    var bodies = [];
+    event.bodies.forEach(compactBody => {
+      bodies.push(new Body(compactBody));
+    });
+    this.emit('bodies', bodies, event.floorClipPlane);
+  }
+
+  _handleGestureEvent(event) {
+    let {gesture, body} = event;
+    this.emit('gesture', gesture, body);
+  }
+
+  _handleStreamEvent(data) {
     var ba = new Uint16Array(data);
 
     let streamType = ba[0];
@@ -150,7 +168,6 @@ class Kinect extends EventEmitter {
       let frameDesc = {width: ba[1], height: ba[2], minDistance: ba[3], maxDistance: ba[4]};
       this.emit('depth', new Uint16Array(data, 10), frameDesc);
     }
-
   }
 }
 
