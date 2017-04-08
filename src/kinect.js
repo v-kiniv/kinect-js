@@ -39,7 +39,7 @@ class Kinect extends EventEmitter {
     this.lastRemoved = null;
 
     this.socket.onopen = () => {
-      clearInterval(this.timer);
+      clearTimeout(this.timer);
       this.timer = null;
 
       this.connected = true;
@@ -53,13 +53,7 @@ class Kinect extends EventEmitter {
         return;
       }
 
-      this.connected = false;
-      this.sensor.available = false;
-      this.sensor.trackedBodies = 0;
-      this._updateState();
-
-      this.socket.close();
-      this.socket = null;
+      this.close();
 
       this.timer = setTimeout(() => {
         this.connect();
@@ -89,6 +83,20 @@ class Kinect extends EventEmitter {
         this._handleStreamEvent(msg.data);
       }
     };
+  }
+
+  close() {
+    this.connected = false;
+    this.sensor.available = false;
+    this.sensor.trackedBodies = 0;
+    this._updateState();
+
+    if (this.socket !== null) {
+      this.socket.onmessage = null;
+      this.socket.onclose = null;
+      this.socket.close();
+      this.socket = null;
+    }
   }
 
   /* Private methods */
