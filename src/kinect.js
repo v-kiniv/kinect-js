@@ -24,15 +24,18 @@ class Kinect extends EventEmitter {
     this._address = newAddress;
   }
 
-  connect(address) {
+  connect(address, secure) {
     if (address !== undefined) {
       this.address = address;
+    }
+    if (secure === undefined) {
+      secure = true;
     }
     if (this.socket !== null) {
       this.socket.close();
     }
 
-    this.socket = new WebSocket('ws://' + this.address + ':8181');
+    this.socket = new WebSocket(`${secure ? 'wss' : 'ws'}://${this.address}:8181`);
     this.socket.binaryType = 'arraybuffer';
 
     this.lastAdded = null;
