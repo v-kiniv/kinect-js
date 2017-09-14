@@ -12,8 +12,8 @@ class Kinect extends EventEmitter {
       trackedBodies: 0
     };
 
-    this.on('newListener', event => this._handleNewListener(event));
-    this.on('removeListener', event => this._handleRemoveListener(event));
+    this.on('newListener', this._handleNewListener);
+    this.on('removeListener', this._handleRemoveListener);
   }
 
   connect(address, secure) {
@@ -95,12 +95,12 @@ class Kinect extends EventEmitter {
   }
 
   /* Private methods */
-  _handleNewListener(event) {
+  _handleNewListener = event => {
     this.lastAdded = event;
     this._updateSessionOptions();
   }
 
-  _handleRemoveListener(event) {
+  _handleRemoveListener = event => {
     this.lastRemoved = event;
     this._updateSessionOptions();
   }
