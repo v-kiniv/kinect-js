@@ -153,9 +153,9 @@ class Kinect extends EventEmitter {
 
   _handleBodiesEvent(event) {
     const bodies = [];
-    event.bodies.forEach(compactBody => {
-      bodies.push(new Body(compactBody));
-    });
+    for (let i = 0; i < event.bodies.length; i++) {
+      bodies.push(new Body(event.bodies[i]));
+    }
     this.emit('bodies', bodies, event.floorClipPlane);
   }
 
@@ -230,8 +230,6 @@ Kinect.TrackingState = Object.freeze({
 
 class Body {
   constructor(compactBody) {
-    const body = this;
-
     this.trackingId = compactBody.TI;
     this.isClosest = compactBody.IC;
     this.handLeftConfidence = Kinect.TrackingConfidence[compactBody.HLC];
@@ -242,9 +240,9 @@ class Body {
     this.lean = compactBody.LN;
     this.skeleton = {};
 
-    compactBody.JN.forEach((compactJoint, type) => {
-      body.skeleton[Kinect.JointType[type]] = new Joint(compactJoint);
-    });
+    for (let i = 0; i < compactBody.JN.length; i++) {
+      this.skeleton[Kinect.JointType[i]] = new Joint(compactBody.JN[i]);
+    }
   }
 }
 
