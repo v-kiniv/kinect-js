@@ -58,7 +58,7 @@ class Kinect extends EventEmitter {
 
     this.socket.onmessage = msg => {
       if (typeof msg.data === 'string') {
-        var event = JSON.parse(msg.data);
+        const event = JSON.parse(msg.data);
 
         switch (event.type) {
           case 'state':
@@ -106,15 +106,15 @@ class Kinect extends EventEmitter {
   }
 
   _sendServerEvent(eventType, data) {
-    var event = { Type: eventType, Data: JSON.stringify(data) };
+    const event = { Type: eventType, Data: JSON.stringify(data) };
     this.socket.send(JSON.stringify(event));
   }
 
   _updateState() {
-    var state = {
-      'connected': this.connected,
-      'available': this.sensor.available,
-      'trackedBodies': this.sensor.trackedBodies
+    const state = {
+      connected: this.connected,
+      available: this.sensor.available,
+      trackedBodies: this.sensor.trackedBodies
     };
     this.emit('state', state);
   }
@@ -133,10 +133,11 @@ class Kinect extends EventEmitter {
   }
 
   _updateSessionOptions() {
-    var config = {};
-    config.GestureEvents = this._listenersCount('gesture') > 0;
-    config.BodyEvents = this._listenersCount('bodies') > 0;
-    config.DepthEvents = this._listenersCount('depth') > 0;
+    const config = {
+      GestureEvents: this._listenersCount('gesture') > 0,
+      BodyEvents: this._listenersCount('bodies') > 0,
+      DepthEvents: this._listenersCount('depth') > 0
+    };
 
     if (this.connected) {
       this._sendServerEvent('SessionConfig', config);
@@ -151,7 +152,7 @@ class Kinect extends EventEmitter {
   }
 
   _handleBodiesEvent(event) {
-    var bodies = [];
+    const bodies = [];
     event.bodies.forEach(compactBody => {
       bodies.push(new Body(compactBody));
     });
@@ -159,16 +160,16 @@ class Kinect extends EventEmitter {
   }
 
   _handleGestureEvent(event) {
-    let {gesture, body} = event;
+    const { gesture, body } = event;
     this.emit('gesture', gesture, body);
   }
 
   _handleStreamEvent(data) {
-    var ba = new Uint16Array(data);
+    const ba = new Uint16Array(data);
 
-    let streamType = ba[0];
+    const streamType = ba[0];
     if (streamType === Kinect.StreamType.Depth) {
-      let frameDesc = {width: ba[1], height: ba[2], minDistance: ba[3], maxDistance: ba[4]};
+      const frameDesc = {width: ba[1], height: ba[2], minDistance: ba[3], maxDistance: ba[4]};
       this.emit('depth', new Uint16Array(data, 10), frameDesc);
     }
   }
@@ -229,7 +230,7 @@ Kinect.TrackingState = Object.freeze({
 
 class Body {
   constructor(compactBody) {
-    var body = this;
+    const body = this;
 
     this.trackingId = compactBody.TI;
     this.isClosest = compactBody.IC;
