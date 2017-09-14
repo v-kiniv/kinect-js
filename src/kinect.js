@@ -6,7 +6,7 @@ class Kinect extends EventEmitter {
     this.connected = false;
     this.socket = null;
     this.timer = null;
-    this._address = '127.0.0.1';
+    this.address = '127.0.0.1';
     this.sensor = {
       available: true,
       trackedBodies: 0
@@ -14,14 +14,6 @@ class Kinect extends EventEmitter {
 
     this.on('newListener', event => this._handleNewListener(event));
     this.on('removeListener', event => this._handleRemoveListener(event));
-  }
-
-  get address() {
-    return this._address;
-  }
-
-  set address(newAddress) {
-    this._address = newAddress;
   }
 
   connect(address, secure) {
