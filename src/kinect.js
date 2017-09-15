@@ -165,16 +165,10 @@ class Kinect extends EventEmitter {
   }
 
   _handleStreamEvent(data) {
-    const [
-      streamType,
-      width,
-      height,
-      minDistance,
-      maxDistance
-    ] = new Uint16Array(data, 0, 10);
+    const desc = new Uint16Array(data, 0, 10);
 
-    if (streamType === Kinect.StreamType.Depth) {
-      const frameDesc = {width: width, height: height, minDistance: minDistance, maxDistance: maxDistance};
+    if (desc[0] === Kinect.StreamType.Depth) {
+      const frameDesc = {width: desc[1], height: desc[2], minDistance: desc[3], maxDistance: desc[4]};
       this.emit('depth', new Uint16Array(data, 10), frameDesc);
     }
   }
