@@ -6,22 +6,14 @@ class Kinect extends EventEmitter {
     this.connected = false;
     this.socket = null;
     this.timer = null;
-    this._address = '127.0.0.1';
+    this.address = '127.0.0.1';
     this.sensor = {
       available: true,
       trackedBodies: 0
     };
 
-    this.on('newListener', event => this._handleNewListener(event));
-    this.on('removeListener', event => this._handleRemoveListener(event));
-  }
-
-  get address() {
-    return this._address;
-  }
-
-  set address(newAddress) {
-    this._address = newAddress;
+    this.on('newListener', this._handleNewListener);
+    this.on('removeListener', this._handleRemoveListener);
   }
 
   connect(address, secure) {
@@ -66,7 +58,7 @@ class Kinect extends EventEmitter {
 
     this.socket.onmessage = msg => {
       if (typeof msg.data === 'string') {
-        var event = JSON.parse(msg.data);
+        const event = JSON.parse(msg.data);
 
         switch (event.type) {
           case 'state':
@@ -103,26 +95,26 @@ class Kinect extends EventEmitter {
   }
 
   /* Private methods */
-  _handleNewListener(event) {
+  _handleNewListener = event => {
     this.lastAdded = event;
     this._updateSessionOptions();
   }
 
-  _handleRemoveListener(event) {
+  _handleRemoveListener = event => {
     this.lastRemoved = event;
     this._updateSessionOptions();
   }
 
   _sendServerEvent(eventType, data) {
-    var event = { Type: eventType, Data: JSON.stringify(data) };
+    const event = { Type: eventType, Data: JSON.stringify(data) };
     this.socket.send(JSON.stringify(event));
   }
 
   _updateState() {
-    var state = {
-      'connected': this.connected,
-      'available': this.sensor.available,
-      'trackedBodies': this.sensor.trackedBodies
+    const state = {
+      connected: this.connected,
+      available: this.sensor.available,
+      trackedBodies: this.sensor.trackedBodies
     };
     this.emit('state', state);
   }
@@ -141,10 +133,11 @@ class Kinect extends EventEmitter {
   }
 
   _updateSessionOptions() {
-    var config = {};
-    config.GestureEvents = this._listenersCount('gesture') > 0;
-    config.BodyEvents = this._listenersCount('bodies') > 0;
-    config.DepthEvents = this._listenersCount('depth') > 0;
+    const config = {
+      GestureEvents: this._listenersCount('gesture') > 0,
+      BodyEvents: this._listenersCount('bodies') > 0,
+      DepthEvents: this._listenersCount('depth') > 0
+    };
 
     if (this.connected) {
       this._sendServerEvent('SessionConfig', config);
@@ -159,24 +152,23 @@ class Kinect extends EventEmitter {
   }
 
   _handleBodiesEvent(event) {
-    var bodies = [];
-    event.bodies.forEach(compactBody => {
-      bodies.push(new Body(compactBody));
-    });
+    const bodies = [];
+    for (let i = 0; i < event.bodies.length; i++) {
+      bodies.push(new Body(event.bodies[i]));
+    }
     this.emit('bodies', bodies, event.floorClipPlane);
   }
 
   _handleGestureEvent(event) {
-    let {gesture, body} = event;
+    const { gesture, body } = event;
     this.emit('gesture', gesture, body);
   }
 
   _handleStreamEvent(data) {
-    var ba = new Uint16Array(data);
+    const desc = new Uint16Array(data, 0, 10);
 
-    let streamType = ba[0];
-    if (streamType === Kinect.StreamType.Depth) {
-      let frameDesc = {width: ba[1], height: ba[2], minDistance: ba[3], maxDistance: ba[4]};
+    if (desc[0] === Kinect.StreamType.Depth) {
+      const frameDesc = {width: desc[1], height: desc[2], minDistance: desc[3], maxDistance: desc[4]};
       this.emit('depth', new Uint16Array(data, 10), frameDesc);
     }
   }
@@ -237,8 +229,6 @@ Kinect.TrackingState = Object.freeze({
 
 class Body {
   constructor(compactBody) {
-    var body = this;
-
     this.trackingId = compactBody.TI;
     this.isClosest = compactBody.IC;
     this.handLeftConfidence = Kinect.TrackingConfidence[compactBody.HLC];
@@ -249,9 +239,9 @@ class Body {
     this.lean = compactBody.LN;
     this.skeleton = {};
 
-    compactBody.JN.forEach((compactJoint, type) => {
-      body.skeleton[Kinect.JointType[type]] = new Joint(compactJoint);
-    });
+    for (let i = 0; i < compactBody.JN.length; i++) {
+      this.skeleton[Kinect.JointType[i]] = new Joint(compactBody.JN[i]);
+    }
   }
 }
 
